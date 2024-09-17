@@ -33,22 +33,41 @@ impl ServerContext {
     }
 }
 
-fn serve_file(ctx: &ServerContext, request: HttpRequest) -> HttpResult<HttpResponse> {
-    let uri = if request.uri() == "/" {
+///
+fn get_uri_path(ctx: &ServerContext, uri: &str) -> HttpResult<PathBuf> {
+    let uri_path = if uri == "/" {
         Path::new("index.html")
     } else {
-        Path::new(request.uri())
+        Path::new(uri)
     };
 
     // Strip the uri of any leading '/' as .join() will treat absolute
     // paths as a replacement for the source path.
-    let stripped_uri = uri.strip_prefix("/").unwrap_or(uri);
+    let stripped_uri = uri_path.strip_prefix("/").unwrap_or(uri_path);
     // Make the uri relative to the served directory.
     let path = ctx.root_dir().join(stripped_uri);
     if !fs::exists(&path)? {
-        return Err(HttpError::NotFound(request.uri().to_string()));
+        return Err(HttpError::NotFound(uri.to_string()));
     }
+    else {
+        return Ok(path);
+    }
+}
 
+/// Get a response only containing response headers
+fn serve_file_headers(ctx: &ServerContext, request: &HttpRequest) -> HttpResult<HttpResponse> {
+    get_uri_path(ctx, request.uri())?;
+
+    Ok(HttpResponse {
+        status: HttpStatus::Ok,
+        headers: ctx.default_headers.clone(),
+        body: Vec::new(),
+    })
+}
+
+/// Get a response containing a file specified by the uri field of the request.
+fn serve_file(ctx: &ServerContext, request: &HttpRequest) -> HttpResult<HttpResponse> {
+    let path = get_uri_path(ctx, request.uri())?;
     let body = fs::read(&path)?;
 
     Ok(HttpResponse {
@@ -69,8 +88,8 @@ fn handle_request<W: Write>(
 
     // Currently, we only support 
     let result = match request.method() {
-        RequestMethod::Get => serve_file(ctx, request),
-        RequestMethod::Head => Err(HttpError::NotImplemented),
+        RequestMethod::Get => serve_file(ctx, &request),
+        RequestMethod::Head => serve_file_headers(ctx, &request),
         RequestMethod::Post => Err(HttpError::NotImplemented)
     };
 
