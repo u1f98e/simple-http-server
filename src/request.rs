@@ -94,7 +94,7 @@ impl HttpRequest {
     }
 
     fn parse_request_line(line: &str) -> HttpResult<(RequestMethod, String, String)> {
-        let mut parts = line.split(' ');
+        let mut parts = line.trim().split(' ');
         let request_type = parts.next()
             .map(|s| RequestMethod::from_str(s))
             .ok_or(HttpError::InvalidRequest("missing request method".to_owned()))?
