@@ -25,4 +25,12 @@ impl HttpResponse {
 
         Ok(())
     }
+
+    pub fn from_status(status: HttpStatus) -> HttpResponse {
+        HttpResponse {
+            status,
+            headers: HashMap::new(),
+            body: Vec::new()
+        }
+    }
 }

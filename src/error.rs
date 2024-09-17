@@ -12,6 +12,7 @@ pub enum HttpError {
 	},
 	InvalidRequest(String),
 	NotFound(String),
+	NotImplemented
 }
 
 impl Display for HttpError {
@@ -27,7 +28,8 @@ impl Display for HttpError {
 				}
 			},
 			HttpError::InvalidRequest(context) => writeln!(f, "{status_code}: {context}"),
-			HttpError::NotFound(context) => writeln!(f, "{status_code}: {context}"),
+			HttpError::NotFound(uri) => writeln!(f, "{status_code}: {uri} not found"),
+			HttpError::NotImplemented => writeln!(f, "{status_code}: resource or method not implemented")
 		}
 	}
 }
@@ -63,6 +65,7 @@ impl HttpError {
 			HttpError::IoError { .. } => HttpStatus::InternalError,
 			HttpError::InvalidRequest(_) => HttpStatus::BadRequest,
 			HttpError::NotFound(_) => HttpStatus::NotFound,
+			HttpError::NotImplemented => HttpStatus::NotImplemented,
 		}
 	}
 }

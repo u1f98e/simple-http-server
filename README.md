@@ -13,19 +13,26 @@ cargo build
 The only dependency this project has is on a cli argument parsing library (clap).
 It will be automatically downloaded and built when using `cargo build`.
 
-To start the server using the default port `8080`, use:
+To start the server using the default port `8080`, use the following:
 
 ```
+# Run server
 cargo run
-```
 
-Or, pass additional arguments to the program with `--`:
-
-```
-# Use `--` to pass additional arguments with cargo
+# To pass command line arguments with cargo, separate arguments with `--`
 cargo run -- --help
-cargo run -- --port 8686
+cargo run -- --port 8686 --root www
 
 # Or run the executable directly
-./target/debug/simple-http-server --port 8686
+./target/debug/simple-http-server --port 8686 --root www
+```
+
+## Usage
+```
+Usage: simple-http-server [OPTIONS]
+
+Options:
+  -p, --port <PORT>  The port the application should listen on [default: 8080]
+      --root <ROOT>  The directory the server will serve files from. Defaults to the current directory [default: .]
+  -h, --help         Print help
 ```

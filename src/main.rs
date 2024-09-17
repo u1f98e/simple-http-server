@@ -44,10 +44,7 @@ fn serve_file(ctx: &ServerContext, request: HttpRequest) -> HttpResult<HttpRespo
     // Make the uri relative to the served directory.
     let path = ctx.root_dir().join(stripped_uri);
     if !fs::exists(&path)? {
-        return Err(HttpError::NotFound(format!(
-            "{} does not exist",
-            request.uri()
-        )));
+        return Err(HttpError::NotFound(request.uri().to_string()));
     }
 
     let body = fs::read(&path)?;
@@ -59,6 +56,7 @@ fn serve_file(ctx: &ServerContext, request: HttpRequest) -> HttpResult<HttpRespo
     })
 }
 
+/// Handle an http request
 fn handle_request<W: Write>(
     ctx: &ServerContext,
     request: HttpRequest,
@@ -67,10 +65,11 @@ fn handle_request<W: Write>(
     // Print the request using the HttpRequest's `fmt` function
     println!("{request}");
 
+    // Currently, we only support 
     let result = match request.method() {
         RequestMethod::Get => serve_file(ctx, request),
-        RequestMethod::Head => todo!(),
-        RequestMethod::Post => todo!(),
+        RequestMethod::Head => Err(HttpError::NotImplemented),
+        RequestMethod::Post => Err(HttpError::NotImplemented)
     };
 
     let response = match result {
@@ -101,10 +100,13 @@ fn handle_connection(ctx: &ServerContext, stream: TcpStream) {
             }
         }
         Err(e) => {
+            // An error occured while parsing the request, report an error
+            // to the client.
             eprintln!("Error while reading request: {e:?}");
             let err_response: HttpResponse = e.into();
-            err_response.write(writer)
-                .unwrap_or_else(|e| eprintln!("Failed to write error response for previous error: {e:?}"))    
+            err_response.write(writer).unwrap_or_else(|e| {
+                eprintln!("Failed to write error response for previous error: {e:?}")
+            })
         }
     }
 }
@@ -112,9 +114,12 @@ fn handle_connection(ctx: &ServerContext, stream: TcpStream) {
 // CLI Argument Parsing
 #[derive(Parser)]
 struct CliArgs {
+    /// The port the application should listen on.
     #[arg(short, long, default_value_t = 8080)]
     port: u16,
 
+    /// The directory the server will serve files from. Defaults to
+    /// the current directory.
     #[arg(long, default_value = ".")]
     root: PathBuf,
 }
@@ -130,6 +135,7 @@ fn main() -> std::io::Result<()> {
     let ctx = Arc::new(ServerContext { root: args.root });
 
     // Listen for new connections
+    eprintln!("Listening on port {port}.");
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
