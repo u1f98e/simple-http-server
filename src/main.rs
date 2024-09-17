@@ -24,6 +24,7 @@ use status::HttpStatus;
 
 struct ServerContext {
     root: PathBuf,
+    default_headers: HashMap<String, String>
 }
 
 impl ServerContext {
@@ -52,7 +53,7 @@ fn serve_file(ctx: &ServerContext, request: HttpRequest) -> HttpResult<HttpRespo
 
     Ok(HttpResponse {
         status: HttpStatus::Ok,
-        headers: HashMap::new(),
+        headers: ctx.default_headers.clone(),
         body,
     })
 }
@@ -133,7 +134,14 @@ fn main() -> std::io::Result<()> {
     let port = args.port;
     let listener = TcpListener::bind(SocketAddrV4::new(addr, port))?;
 
-    let ctx = Arc::new(ServerContext { root: args.root });
+    let default_headers = HashMap::from([
+        ("Server".to_string(), "SimpleHttp/0.1".to_string())
+    ]);
+
+    let ctx = Arc::new(ServerContext { 
+        root: args.root,
+        default_headers
+    });
 
     // Listen for new connections
     eprintln!("Listening on port {port}.");
