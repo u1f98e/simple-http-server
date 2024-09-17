@@ -86,7 +86,7 @@ fn handle_request<W: Write>(
     // Print the request using the HttpRequest's `fmt` function
     println!("{request}");
 
-    // Currently, we only support 
+    // Currently, we don't support POST 
     let result = match request.method() {
         RequestMethod::Get => serve_file(ctx, &request),
         RequestMethod::Head => serve_file_headers(ctx, &request),

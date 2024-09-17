@@ -4,6 +4,8 @@ use crate::{response::HttpResponse, status::HttpStatus};
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
 
+/// An error object which communicates possible error states.
+/// Most error states can be converted to HTTP responses.
 #[derive(Debug)]
 pub enum HttpError {
 	IoError {
@@ -15,6 +17,7 @@ pub enum HttpError {
 	NotImplemented
 }
 
+// Implements a function that allows each type of error to be printed.
 impl Display for HttpError {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let status_code = self.status().code();
@@ -34,6 +37,7 @@ impl Display for HttpError {
 	}
 }
 
+// Provides access to the inner error object if one exists.
 impl Error for HttpError {
 	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		match self {
@@ -43,6 +47,8 @@ impl Error for HttpError {
 	}
 }
 
+// Conversion function for converting errors into http responses
+// using the messages implemented in the Display trait above.
 impl Into<HttpResponse> for HttpError {
 	fn into(self) -> HttpResponse {
 		HttpResponse {
@@ -53,6 +59,7 @@ impl Into<HttpResponse> for HttpError {
 	}
 }
 
+// Conversion function for creating an HttpError from an io::Error
 impl From<std::io::Error> for HttpError {
 	fn from(inner: std::io::Error) -> Self {
 		HttpError::IoError { inner, context: String::new() }
@@ -60,6 +67,7 @@ impl From<std::io::Error> for HttpError {
 }
 
 impl HttpError {
+	/// Get the status code this error object represents
 	fn status(&self) -> HttpStatus {
 		match self {
 			HttpError::IoError { .. } => HttpStatus::InternalError,

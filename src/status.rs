@@ -1,3 +1,4 @@
+/// An enum representing different HTTP response status codes.
 #[derive(Debug)]
 pub enum HttpStatus {
 	Ok,
@@ -18,6 +19,7 @@ pub enum HttpStatus {
 }
 
 impl HttpStatus {
+	/// Get this status object's numeric status code.
 	pub fn code(&self) -> u16 {
 		match self {
 			Self::Ok => 200,
@@ -38,6 +40,7 @@ impl HttpStatus {
 		}
 	}
 
+	/// Get the short english descriptor for this status object
 	pub fn name(&self) -> &'static str {
 		match self {
 			Self::Ok => "Ok",

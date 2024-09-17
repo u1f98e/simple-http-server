@@ -62,6 +62,7 @@ impl HttpRequest {
                 break;
             }
 
+            // Split headers on the first ':' for keys and values
             if let Some((key, val)) = line.split_once(":") {
                 headers.insert(key.trim().to_string(), val.trim().to_string());
             } else {
@@ -99,6 +100,9 @@ impl HttpRequest {
         Ok(request)
     }
 
+    /// Parse the first line of a request, returning a tuple
+    /// containing the request method (GET, POST, etc), the requested
+    /// URI, and the http version if successful.
     fn parse_request_line(line: &str) -> HttpResult<(RequestMethod, String, String)> {
         let mut parts = line.trim().split(' ');
         let request_type = parts.next()
