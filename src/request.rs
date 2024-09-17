@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display, io::BufRead, str::FromStr};
 
-use crate::error::{HttpError, HttpResult};
+use crate::{error::{HttpError, HttpResult}, MAX_REQUEST_BODY_SIZE};
 
 #[derive(Debug)]
 pub enum RequestMethod {
@@ -75,6 +75,12 @@ impl HttpRequest {
             Some(content_length) => {
                 // If content length string is not a valid number, use 0
                 let length: usize = content_length.parse().unwrap_or(0);
+                if length > MAX_REQUEST_BODY_SIZE {
+                    return Err(HttpError::InvalidRequest(
+                        format!("Request body size cannot exceed {MAX_REQUEST_BODY_SIZE} bytes")
+                    ));
+                }
+
                 let mut bytes = vec![0u8; length];
                 reader.read(&mut bytes)?;
                 Some(bytes)

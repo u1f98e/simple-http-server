@@ -9,6 +9,7 @@ use std::{
 };
 
 static HTTP_VERSION: &str = "HTTP/1.0";
+static MAX_REQUEST_BODY_SIZE: usize = 2_000_000; // 2 MB
 
 pub mod error;
 pub mod request;
