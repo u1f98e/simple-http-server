@@ -28,7 +28,14 @@ struct ServerContext {
 }
 
 impl ServerContext {
-    fn root_dir(&self) -> &PathBuf {
+    pub fn new(root: PathBuf, default_headers: HashMap<String, String>) -> Self {
+        Self {
+            root: root.canonicalize().expect("expected valid server root directory"),
+            default_headers
+        }
+    }
+
+    pub fn root_dir(&self) -> &PathBuf {
         &self.root
     }
 }
@@ -44,13 +51,29 @@ fn get_uri_path(ctx: &ServerContext, uri: &str) -> HttpResult<PathBuf> {
     // Strip the uri of any leading '/' as .join() will treat absolute
     // paths as a replacement for the source path.
     let stripped_uri = uri_path.strip_prefix("/").unwrap_or(uri_path);
+
     // Make the uri relative to the served directory.
-    let path = ctx.root_dir().join(stripped_uri);
-    if !fs::exists(&path)? {
+    // Return a 404 error if canonicalization fails
+    let path = ctx.root_dir()
+        .join(stripped_uri)
+        .canonicalize()
+        .map_err(|_| HttpError::NotFound(uri.to_string()))?; 
+    // Sending io/500 errors could leak information about the file structure.
+    // Also, canonicalize returns an error if the file doesn't exist
+
+    // Don't serve files outside of the server root.
+    // This will break simlinks outside of the server root but more generally
+    // protects against traversal attacks so I don't care.
+    if !path.starts_with(ctx.root_dir()) {
         return Err(HttpError::NotFound(uri.to_string()));
     }
-    else {
+
+    // Check if the path exists and is a file
+    if fs::metadata(&path).is_ok_and(|md| md.is_file()) {
         return Ok(path);
+    }
+    else {
+        return Err(HttpError::NotFound(uri.to_string()));
     }
 }
 
@@ -157,10 +180,7 @@ fn main() -> std::io::Result<()> {
         ("Server".to_string(), "SimpleHttp/0.1".to_string())
     ]);
 
-    let ctx = Arc::new(ServerContext { 
-        root: args.root,
-        default_headers
-    });
+    let ctx = Arc::new(ServerContext::new(args.root, default_headers));
 
     // Listen for new connections
     eprintln!("Listening on port {port}.");
